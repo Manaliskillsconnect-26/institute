@@ -620,13 +620,15 @@ export const sendCollegeOtp = async (req, res) => {
     console.log(onboarding_user_id, ups_colleges_id )
 
     /* ================= VALIDATION ================= */
-    if (!onboarding_user_id || !ups_colleges_id) {
-       console.log(onboarding_user_id, ups_colleges_id )
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
       return res.status(400).json({
         status: false,
-        msg: "ups_colleges_id and onboarding_user_id required"
+        errors: errors.array()
       });
     }
+
 
     /* ================= GET VERIFIED COLLEGE ================= */
     const collegeData = await commonModel.getData(
@@ -807,13 +809,6 @@ export const verifyCollegeOtp = async (req, res) => {
       });
     }
 
-    if (!onboarding_user_id || !college_verification_otp) {
-      console.log(onboarding_user_id, college_verification_otp,ups_colleges_id)
-      return res.status(400).json({
-        status: false,
-        msg: "onboarding_user_id  and OTP are required"
-      });
-    }
 
     /* ================= GET COLLEGE ================= */
     const college = await commonModel.getData(
@@ -925,6 +920,7 @@ export const resendCollegeOtp = async (req, res) => {
         errors: errors.array()
       });
     }
+
 
     /* ================= GET COLLEGE ================= */
     const collegeData = await commonModel.getData(
