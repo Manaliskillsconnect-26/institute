@@ -133,10 +133,18 @@ export const validateVerifyOtp = [
 
 
 export const validateverifyCollegeOtp = [
-  body("college_name")
-    .notEmpty().withMessage("college_name is required"),
+  body("onboarding_user_id")
+    .notEmpty().withMessage("onboarding_user_id is required"),
     body("college_verification_otp")
     .notEmpty().withMessage("college_verification_otp is required")
+    
+];
+
+export const validatsendCollegeOtp = [
+  body("onboarding_user_id")
+    .notEmpty().withMessage("onboarding_user_id is required"),
+    body("ups_colleges_id")
+    .notEmpty().withMessage("ups_colleges_id")
     
 ];
 
