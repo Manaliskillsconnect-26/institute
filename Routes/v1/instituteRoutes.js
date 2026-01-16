@@ -36,6 +36,7 @@ import {
   validateManualForm,
   validateCourses,
   validatePrefill,
+  validatsendCollegeOtp,
   
   validateSubmit
 } from "../../modules/controllers/masters/instituteValidation.js";
@@ -59,9 +60,9 @@ router.post("/verify-otp",validateVerifyOtp, verifyOtp);
 // router.post("/verify-college-otp", validateverifyCollegeOtp,verifyCollegeOtp);
 router.post("/resend-otp",validateSendOtp, resendOtp);
 
-router.post("/send-college-otp",validateGetColleges, sendCollegeOtp);
+router.post("/send-college-otp",validatsendCollegeOtp, sendCollegeOtp);
 router.post("/verify-college-otp",validateverifyCollegeOtp, verifyCollegeOtp);
-router.post("/resend-college-otp",validateGetColleges, resendCollegeOtp);
+router.post("/resend-college-otp",validatsendCollegeOtp, resendCollegeOtp);
 router.post("/College-form",validateManualForm, saveManualCollegeDetails);
 router.post("/saveOnboardingCourseSpecialization",validateCourses, saveOnboardingCourseSpecialization);
 router.post("/get-college-list",validateGetColleges, getCollegeListing);
