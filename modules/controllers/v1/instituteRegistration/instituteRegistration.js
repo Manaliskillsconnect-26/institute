@@ -289,7 +289,7 @@ export const sendOtp = async (req, res) => {
     let mobile;
     let otpField;
 
-    /* ✅ EXPLICIT LOGIC — NO || */
+    /* EXPLICIT LOGIC — NO || */
     if (user[0].official_number && user[0].official_number!== "") {
       mobile = user[0].official_number;
       otpField = "official_number_otp";
@@ -309,7 +309,7 @@ export const sendOtp = async (req, res) => {
 Please DO NOT share OTP with anyone to keep your account safe.
 - UPSKILL TECH SOLUTIONS`;
 
-    /* 1️⃣ Send SMS */
+    /* Send SMS */
     const smsSent = await sendNormalOTPMsg(mobile, content, otp);
 
     if (!smsSent) {
@@ -319,12 +319,12 @@ Please DO NOT share OTP with anyone to keep your account safe.
       });
     }
 
-    /* 2️⃣ Store OTP in correct column */
+    /* 2 Store OTP in correct column */
     await commonModel.updateData(
       "ups_college_onboarding_users",
       {
-        [otpField]: otp,          // explicit column
-        updated_on: new Date(),   // start 15-min timer
+        [otpField]: otp,          
+        updated_on: new Date(),   
         updated_by: 1
       },
       `id = ${id}`
@@ -384,7 +384,7 @@ export const verifyOtp = async (req, res) => {
     let dbOtp = null;
     let otpField = null;
 
-    /* ✅ EXPLICIT OTP SOURCE (NO ||) */
+   
     if (user[0].official_number_otp) {
       dbOtp = user[0].official_number_otp;
       otpField = "official_number_otp";
@@ -422,7 +422,7 @@ export const verifyOtp = async (req, res) => {
     await commonModel.updateData(
       "ups_college_onboarding_users",
       {
-        [otpField]: null,               // clear correct OTP only
+        [otpField]: null,               
         // official_number_otp_status: "Yes",
         updated_on: new Date(),
         updated_by: 1
@@ -616,123 +616,151 @@ export const getCollegeListing = async (req, res) => {
 
 export const sendCollegeOtp = async (req, res) => {
   try {
-    const { college_name } = req.body;
+    const { onboarding_user_id, ups_colleges_id } = req.body;
+    console.log(onboarding_user_id, ups_colleges_id )
 
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
+    /* ================= VALIDATION ================= */
+    if (!onboarding_user_id || !ups_colleges_id) {
+       console.log(onboarding_user_id, ups_colleges_id )
       return res.status(400).json({
         status: false,
-        errors: errors.array()
+        msg: "ups_colleges_id and onboarding_user_id required"
       });
     }
-    // console.log(college_name)
-    // /* ================= VALIDATION ================= */
-    // if (!college_name) {
-    //   return res.status(400).json({
-    //     status: false,
-    //     msg: "college_name is required"
-    //   });
-    // }
 
-    /* ================= GET COLLEGE ================= */
-    const college = await commonModel.getData(
+    /* ================= GET VERIFIED COLLEGE ================= */
+    const collegeData = await commonModel.getData(
       "ups_colleges",
-      "id, college_name, college_contact,registered_from,college_profile,website,college_email,college_contact,college_description,country_id,state_id,city_id,pincode,college_address,fl_pitch,naac,college_short_name",
+      "*",
+      `id = ${ups_colleges_id} AND verification_status = 'Verified'`
+    );
+
+    if (!collegeData || collegeData.length === 0) {
+      return res.status(404).json({
+        status: false,
+        msg: "Verified college not found",
+
+      });
+    }
+
+    /* ================= GET VERIFIED TPO ================= */
+    const tpoData = await commonModel.joinFetch(
+      ["ups_users", ["ups_users.mobile"]],
+      [
+        [
+          "LEFT",
+          "ups_college_users_tpo_mapping ",
+          "ups_college_users_tpo_mapping.user_id = ups_users.id",
+          ["ups_college_users_tpo_mapping.master_college_id AS college_id"]
+        ]
+      ],
       `
-        college_name = '${college_name.replace(/'/g, "''")}'
-        AND verification_status = 'Verified'
-        AND status = 'Active'
+        ups_college_users_tpo_mapping.master_college_id = ${ups_colleges_id}
+        AND ups_users.user_type = 5
+        AND ups_users.is_email_verified = 'Yes'
+        AND ups_users.is_mobile_number_verified = 'Yes'
       `
     );
-    const Onboarding = await commonModel.getData(
-      "ups_college_onboarding_users",
-      "id"
-    )
 
-    if (!college || college.length === 0) {
+    if (!tpoData || tpoData.length === 0) {
       return res.status(404).json({
         status: false,
-        msg: "College not found or not verified"
+        msg: "No verified TPO found for this college"
       });
     }
 
-    const collegeId = college[0].id;
-
-    const collegeContact = college[0].college_contact;
-
-    if (!collegeContact) {
-      return res.status(404).json({
-        status: false,
-        msg: "College contact number not available"
-      });
-    }
-
-
+    const tpoMobile = tpoData[0].mobile;
 
     /* ================= GENERATE OTP ================= */
-    const otp = Math.floor(1000 + Math.random() * 9000);
+    const otp = Math.floor(1111 + Math.random() * 8888);
 
-    /* ================= UPSERT ================= */
+    /* ================= PREPARE ONBOARDING DATA ================= */
+    const onboardingPayload = {
+      onboarding_user_id,
+      college_id:ups_colleges_id,
+      college_verificaiton_otp: otp,
+      updated_by: 1,
+      updated_on: new Date()
+    };
+
+    /* ================= CHECK EXISTING RECORD ================= */
     const existing = await commonModel.getData(
       "ups_colleges_onboarding",
       "id",
-      `college_id = ${collegeId}`
+      `onboarding_user_id= ${onboarding_user_id}`
     );
 
     let onboardingId;
 
     if (existing && existing.length > 0) {
+      // UPDATE
       await commonModel.updateData(
         "ups_colleges_onboarding",
-        {
-          college_verificaiton_otp: otp,
-          registered_from: college[0].registered_from,
-          updated_by: 1,
-          updated_on: new Date()
-        },
+        onboardingPayload,
         `id = ${existing[0].id}`
       );
       onboardingId = existing[0].id;
     } else {
+      // INSERT
+      onboardingPayload.created_by = 1;
+      onboardingPayload.created_on = new Date();
+      onboardingPayload.slug = collegeData[0].college_name;
+      onboardingPayload.college_name = collegeData[0].college_name;
+      onboardingPayload.sequence = 0;
+      onboardingPayload.email = collegeData[0].college_email;
+      onboardingPayload.mobile = collegeData[0].college_contact;
+      onboardingPayload.college_profile = collegeData[0].college_profile;
+      onboardingPayload.website = collegeData[0].website;
+      onboardingPayload.college_description = collegeData[0].college_description;
+      // onboardingPayload.college_verificaiton_otp = otp;
+      onboardingPayload.college_verificaiton_otp_status = "NO";
+      onboardingPayload.registered_from = collegeData[0].registered_from;
+      onboardingPayload.country_id = collegeData[0].country_id;
+      onboardingPayload.state_id = collegeData[0].state_id;
+      onboardingPayload.city_id = collegeData[0].city_id;
+      onboardingPayload.pincode = collegeData[0].pincode;
+      onboardingPayload.fl_pitch = collegeData[0].fl_pitch;
+      onboardingPayload.college_short_name = collegeData[0].college_short_name;
+      onboardingPayload.college_address = collegeData[0].college_address;
+      onboardingPayload.naac = collegeData[0].naac;
       onboardingId = await commonModel.insertData(
         "ups_colleges_onboarding",
-        {
-          sequence: 0,
-          college_id: collegeId,
-          onboarding_user_id: Onboarding[0].id,
-          college_name: college[0].college_name,
-          slug: college[0].college_name,
-          email: college[0].college_email,
-          mobile: college[0].college_contact,
-          college_profile: college[0].college_profile,
-          website: college[0].website,
-          college_description: college[0].college_description,
-          college_verificaiton_otp: otp,
-          college_verificaiton_otp_status: "NO",
-          registered_from: college[0].registered_from,
-          country_id: college[0].country_id,
-          state_id: college[0].state_id,
-          city_id: college[0].city_id,
-          pincode: college[0].pincode,
-          fl_pitch: college[0].fl_pitch,
-          college_short_name: college[0].college_short_name,
-          college_address: college[0].college_address,
-          naac: college[0].naac,
-          created_by: 1,
-          created_on: new Date(),
-          updated_by: 1,
-          updated_on: new Date()
-        }
+        onboardingPayload,
+        // sequence: 0,
+        // college_name,
+        // slug: collegeData[0].college_name,
+        // email: collegeData[0].college_email,
+        // mobile: collegeData[0].college_contact,
+        // college_profile: collegeData[0].college_profile,
+        // website: collegeData[0].website,
+        // college_description: collegeData[0].college_description,
+        // college_verificaiton_otp: otp,
+        // college_verificaiton_otp_status: "NO",
+        // registered_from: collegeData[0].registered_from,
+        // country_id: collegeData[0].country_id,
+        // state_id: collegeData[0].state_id,
+        // city_id: collegeData[0].city_id,
+        // pincode: collegeData[0].pincode,
+        // fl_pitch: collegeData[0].fl_pitch,
+        // college_short_name: collegeData[0].college_short_name,
+        // college_address: collegeData[0].college_address,
+        // naac: collegeData[0].naac
+
+
       );
     }
 
     /* ================= SEND OTP ================= */
-    const content = `Your OTP for SkillsConnect is '${otp}' and is valid for 15 mins.
+    const content = `Your OTP for SkillsConnect is ${otp} and is valid for 15 mins.
 Please DO NOT share OTP with anyone.
 - UPSKILL TECH SOLUTIONS`;
 
-    const smsSent = await sendNormalOTPMsg(collegeContact, content, otp);
+    const smsSent = await sendNormalOTPMsg(
+      tpoMobile,
+      content,
+      "College Onboarding Mobile Verification",
+      otp
+    );
 
     if (!smsSent) {
       return res.status(500).json({
@@ -741,10 +769,12 @@ Please DO NOT share OTP with anyone.
       });
     }
 
+    /* ================= SUCCESS RESPONSE ================= */
     return res.status(200).json({
       status: true,
-      msg: "OTP sent successfully to college contact number",
-      ups_college_onboarding_id: onboardingId
+      msg: "OTP sent successfully to college TPO",
+      ups_college_onboarding_id: onboardingId,
+      masked_mobile: tpoMobile.replace(/(\d{2})\d{6}(\d{2})/, "$1******$2")
     });
 
   } catch (error) {
@@ -765,7 +795,7 @@ Please DO NOT share OTP with anyone.
 
 export const verifyCollegeOtp = async (req, res) => {
   try {
-    const { college_name, college_verification_otp } = req.body;
+    const { onboarding_user_id, college_verification_otp } = req.body;
 
     /* ================= VALIDATION ================= */
     const errors = validationResult(req);
@@ -777,10 +807,11 @@ export const verifyCollegeOtp = async (req, res) => {
       });
     }
 
-    if (!college_name || !college_verification_otp) {
+    if (!onboarding_user_id || !college_verification_otp) {
+      console.log(onboarding_user_id, college_verification_otp,ups_colleges_id)
       return res.status(400).json({
         status: false,
-        msg: "college_name and OTP are required"
+        msg: "onboarding_user_id  and OTP are required"
       });
     }
 
@@ -789,8 +820,8 @@ export const verifyCollegeOtp = async (req, res) => {
       "ups_colleges",
       "id",
       `
-        college_name = '${college_name.replace(/'/g, "''")}'
-        AND verification_status = 'Verified'
+        
+         verification_status = 'Verified'
         AND status = 'Active'
       `
     );
@@ -808,7 +839,7 @@ export const verifyCollegeOtp = async (req, res) => {
     const data = await commonModel.getData(
       "ups_colleges_onboarding",
       "id, college_verificaiton_otp, college_verificaiton_otp_status, updated_on",
-      `college_id = ${collegeId}`
+      `onboarding_user_id = ${onboarding_user_id}`
     );
 
     if (!data || data.length === 0) {
@@ -830,9 +861,10 @@ export const verifyCollegeOtp = async (req, res) => {
 
     /* ================= OTP MATCH ================= */
     if (
-      String(record.college_verificaiton_otp) !==
-      String(college_verification_otp)
+      (record.college_verificaiton_otp) !==
+      (college_verification_otp)
     ) {
+      console.log(record.college_verificaiton_otp)
       return res.status(400).json({
         status: false,
         msg: "Incorrect OTP"
@@ -882,7 +914,7 @@ export const verifyCollegeOtp = async (req, res) => {
 
 export const resendCollegeOtp = async (req, res) => {
   try {
-    const { college_name } = req.body;
+    const { onboarding_user_id,ups_colleges_id } = req.body;
 
     /* ================= VALIDATION ================= */
     const errors = validationResult(req);
@@ -895,38 +927,53 @@ export const resendCollegeOtp = async (req, res) => {
     }
 
     /* ================= GET COLLEGE ================= */
-    const college = await commonModel.getData(
+    const collegeData = await commonModel.getData(
       "ups_colleges",
-      "id, college_contact",
+      "*",
+      `id = ${ups_colleges_id} AND verification_status = 'Verified'`
+    );
+
+    if (!collegeData || collegeData.length === 0) {
+      return res.status(404).json({
+        status: false,
+        msg: "Verified college not found",
+
+      });
+    }
+     const tpoData = await commonModel.joinFetch(
+      ["ups_users", ["ups_users.mobile"]],
+      [
+        [
+          "LEFT",
+          "ups_college_users_tpo_mapping ",
+          "ups_college_users_tpo_mapping.user_id = ups_users.id",
+          ["ups_college_users_tpo_mapping.master_college_id AS college_id"]
+        ]
+      ],
       `
-        college_name = '${college_name.replace(/'/g, "''")}'
-        AND verification_status = 'Verified'
-        AND status = 'Active'
+        ups_college_users_tpo_mapping.master_college_id = ${ups_colleges_id}
+        AND ups_users.user_type = 5
+        AND ups_users.is_email_verified = 'Yes'
+        AND ups_users.is_mobile_number_verified = 'Yes'
       `
     );
 
-    if (!college || college.length === 0) {
+    if (!tpoData || tpoData.length === 0) {
       return res.status(404).json({
         status: false,
-        msg: "College not found or not verified"
+        msg: "No verified TPO found for this college"
       });
     }
 
-    const collegeId = college[0].id;
-    const collegeContact = college[0].college_contact;
+    const tpoMobile = tpoData[0].mobile;
 
-    if (!collegeContact) {
-      return res.status(404).json({
-        status: false,
-        msg: "College contact number not available"
-      });
-    }
+    
 
     /* ================= GET ONBOARDING ================= */
     const onboarding = await commonModel.getData(
       "ups_colleges_onboarding",
       "id",
-      `college_id = ${collegeId}`
+      `onboarding_user_id = ${onboarding_user_id}`
     );
 
     if (!onboarding || onboarding.length === 0) {
@@ -936,7 +983,7 @@ export const resendCollegeOtp = async (req, res) => {
       });
     }
 
-    const onboardingId = onboarding[0].id;
+    // const onboardingId = onboarding[0].id;
 
     /* ================= GENERATE OTP ================= */
     const otp = Math.floor(1000 + Math.random() * 9000);
@@ -950,7 +997,7 @@ export const resendCollegeOtp = async (req, res) => {
         updated_by: 1,
         updated_on: new Date()
       },
-      `id = ${onboardingId}`
+      `onboarding_user_id = ${onboarding_user_id}`
     );
 
     /* ================= SEND OTP ================= */
@@ -958,7 +1005,12 @@ export const resendCollegeOtp = async (req, res) => {
 Please DO NOT share OTP with anyone.
 - UPSKILL TECH SOLUTIONS`;
 
-    const smsSent = await sendNormalOTPMsg(collegeContact, content, otp);
+    const smsSent = await sendNormalOTPMsg(
+      tpoMobile,
+      content,
+      "College Onboarding Mobile Verification",
+      otp
+    );
 
     if (!smsSent) {
       return res.status(500).json({
@@ -970,7 +1022,7 @@ Please DO NOT share OTP with anyone.
     return res.status(200).json({
       status: true,
       msg: "OTP resent successfully",
-      ups_college_onboarding_id: onboardingId
+      
     });
 
   } catch (error) {
