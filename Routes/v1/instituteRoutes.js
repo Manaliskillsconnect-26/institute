@@ -43,14 +43,14 @@ import {
 
 const router = express.Router();
 
-/* API Masters */
+
 router.get("/register-by", getRegister);
 router.get("/institute-type", getInstituteType);
 router.get("/getCourses", getCourses);
 router.get("/getspecilization/:id", getspecilization);
 router.get("/states", getstate);
 router.get("/city/:id", getcity);
-/* Step 1 Registration */
+
 router.post("/register/step-one",validateInstituteRegistrationStepOne, instituteRegistrationStepOne);
 router.post("/add-tpo",validateAddTpoDetails, addTpoDetails);
 
@@ -75,8 +75,9 @@ router.post("/submit", validateSubmit,submit);
 
 
 
-//validation
+
 
 
 
 export default router;
+
