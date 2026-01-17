@@ -8,7 +8,7 @@ import 'dotenv/config';
 
 
 
-/* ================= REGISTER BY (STATIC MASTER) ================= */
+
 export const getRegister = async (req, res) => {
   try {
     const data = [
@@ -34,7 +34,7 @@ export const getRegister = async (req, res) => {
 
 
 
-/* ================= INSTITUTE TYPE (STATIC MASTER) ================= */
+
 export const getInstituteType = async (req, res) => {
   try {
     const data = [
@@ -160,7 +160,7 @@ export const instituteRegistrationStepOne = async (req, res) => {
   }
 };
 
-/* ================= ADD TPO DETAILS ================= */
+
 export const addTpoDetails = async (req, res) => {
   try {
 
@@ -213,10 +213,10 @@ export const addTpoDetails = async (req, res) => {
       });
     }
 
-    /* ---------- hash password ---------- */
+   
     const hashedPassword = await hashPassword(tpo_password);
 
-    /* ---------- update TPO details ---------- */
+   
     const updateData = {
       tpo_name,
       tpo_official_email: tpo_email,
@@ -289,7 +289,7 @@ export const sendOtp = async (req, res) => {
     let mobile;
     let otpField;
 
-    /* EXPLICIT LOGIC — NO || */
+    
     if (user[0].official_number && user[0].official_number!== "") {
       mobile = user[0].official_number;
       otpField = "official_number_otp";
@@ -309,7 +309,7 @@ export const sendOtp = async (req, res) => {
 Please DO NOT share OTP with anyone to keep your account safe.
 - UPSKILL TECH SOLUTIONS`;
 
-    /* Send SMS */
+    
     const smsSent = await sendNormalOTPMsg(mobile, content, otp);
 
     if (!smsSent) {
@@ -319,7 +319,7 @@ Please DO NOT share OTP with anyone to keep your account safe.
       });
     }
 
-    /* 2 Store OTP in correct column */
+    
     await commonModel.updateData(
       "ups_college_onboarding_users",
       {
@@ -367,7 +367,7 @@ export const verifyOtp = async (req, res) => {
       });
     }
 
-    /* ================= FETCH USER ================= */
+    
     const user = await commonModel.getData(
       "ups_college_onboarding_users",
       "id, official_number_otp, tpo_number_otp, updated_on",
@@ -398,7 +398,7 @@ export const verifyOtp = async (req, res) => {
       });
     }console.log(dbOtp)
 
-    /* ================= OTP MATCH ================= */
+   
     if ((dbOtp) !== (otp)) {
       return res.status(400).json({
         status: false,
@@ -406,7 +406,7 @@ export const verifyOtp = async (req, res) => {
       });
     }
 
-    /* ================= 15-MIN EXPIRY CHECK ================= */
+    
     const sentAt = new Date(user[0].updated_on);
     const now = new Date();
     const diffMinutes = (now - sentAt) / (1000 * 60);
@@ -418,12 +418,12 @@ export const verifyOtp = async (req, res) => {
       });
     }
 
-    /* ================= CLEAR ONLY VERIFIED OTP ================= */
+    
     await commonModel.updateData(
       "ups_college_onboarding_users",
       {
         [otpField]: null,               
-        // official_number_otp_status: "Yes",
+        
         updated_on: new Date(),
         updated_by: 1
       },
@@ -450,7 +450,7 @@ export const resendOtp = async (req, res) => {
   try {
     const { onboarding_user_id } = req.body;
 
-    /* ================= VALIDATION ================= */
+   
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -460,7 +460,7 @@ export const resendOtp = async (req, res) => {
       });
     }
 
-    /* ================= FETCH USER ================= */
+   
     const user = await commonModel.getData(
       "ups_college_onboarding_users",
       "id, official_number, tpo_number",
@@ -479,7 +479,7 @@ export const resendOtp = async (req, res) => {
     let mobile;
     let otpField;
 
-    /* ✅ EXPLICIT NUMBER SELECTION (NO ||) */
+    
     if (user[0].official_number && user[0].official_number!== "") {
       mobile = user[0].official_number;
       otpField = "official_number_otp";
@@ -493,14 +493,14 @@ export const resendOtp = async (req, res) => {
       });
     }
 
-    /* ================= GENERATE NEW OTP ================= */
+   
     const otp = Math.floor(1000 + Math.random() * 9000);
 
     const content = `Your OTP for SkillsConnect is '${otp}' and is valid for 15 mins.
 Please DO NOT share OTP with anyone to keep your account safe.
 - UPSKILL TECH SOLUTIONS`;
 
-    /* ================= SEND SMS ================= */
+    
     const smsSent = await sendNormalOTPMsg(mobile, content, otp);
 
     if (!smsSent) {
@@ -510,12 +510,12 @@ Please DO NOT share OTP with anyone to keep your account safe.
       });
     }
 
-    /* ================= UPDATE OTP & TIME ================= */
+    
     await commonModel.updateData(
       "ups_college_onboarding_users",
       {
-        [otpField]: otp,           // ✅ correct OTP column
-        updated_on: new Date(),    // ⏱ resets 15-min window
+        [otpField]: otp,          
+        updated_on: new Date(),    
         updated_by: 1
       },
       `id = ${id}`
@@ -574,7 +574,7 @@ export const getCollegeListing = async (req, res) => {
       condition
     );
 
-    /* ================= RESPONSE ================= */
+   
     if (colleges && colleges.length > 0) {
       return res.status(200).json({
         status: true,
@@ -583,7 +583,7 @@ export const getCollegeListing = async (req, res) => {
       });
     }
 
-    // No college found → manual onboarding
+    
     return res.status(200).json({
       status: true,
       type: "NO_COLLEGE_FOUND",
@@ -619,7 +619,7 @@ export const sendCollegeOtp = async (req, res) => {
     const { onboarding_user_id, ups_colleges_id } = req.body;
     console.log(onboarding_user_id, ups_colleges_id )
 
-    /* ================= VALIDATION ================= */
+   
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -630,7 +630,7 @@ export const sendCollegeOtp = async (req, res) => {
     }
 
 
-    /* ================= GET VERIFIED COLLEGE ================= */
+   
     const collegeData = await commonModel.getData(
       "ups_colleges",
       "*",
@@ -645,7 +645,7 @@ export const sendCollegeOtp = async (req, res) => {
       });
     }
 
-    /* ================= GET VERIFIED TPO ================= */
+    
     const tpoData = await commonModel.joinFetch(
       ["ups_users", ["ups_users.mobile"]],
       [
@@ -673,10 +673,10 @@ export const sendCollegeOtp = async (req, res) => {
 
     const tpoMobile = tpoData[0].mobile;
 
-    /* ================= GENERATE OTP ================= */
+   
     const otp = Math.floor(1111 + Math.random() * 8888);
 
-    /* ================= PREPARE ONBOARDING DATA ================= */
+    
     const onboardingPayload = {
       onboarding_user_id,
       college_id:ups_colleges_id,
@@ -685,7 +685,7 @@ export const sendCollegeOtp = async (req, res) => {
       updated_on: new Date()
     };
 
-    /* ================= CHECK EXISTING RECORD ================= */
+   
     const existing = await commonModel.getData(
       "ups_colleges_onboarding",
       "id",
@@ -752,7 +752,7 @@ export const sendCollegeOtp = async (req, res) => {
       );
     }
 
-    /* ================= SEND OTP ================= */
+   
     const content = `Your OTP for SkillsConnect is ${otp} and is valid for 15 mins.
 Please DO NOT share OTP with anyone.
 - UPSKILL TECH SOLUTIONS`;
@@ -771,7 +771,7 @@ Please DO NOT share OTP with anyone.
       });
     }
 
-    /* ================= SUCCESS RESPONSE ================= */
+   
     return res.status(200).json({
       status: true,
       msg: "OTP sent successfully to college TPO",
@@ -799,7 +799,6 @@ export const verifyCollegeOtp = async (req, res) => {
   try {
     const { onboarding_user_id, college_verification_otp } = req.body;
 
-    /* ================= VALIDATION ================= */
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -810,7 +809,6 @@ export const verifyCollegeOtp = async (req, res) => {
     }
 
 
-    /* ================= GET COLLEGE ================= */
     const college = await commonModel.getData(
       "ups_colleges",
       "id",
@@ -830,7 +828,7 @@ export const verifyCollegeOtp = async (req, res) => {
 
     const collegeId = college[0].id;
 
-    /* ================= GET ONBOARDING RECORD ================= */
+
     const data = await commonModel.getData(
       "ups_colleges_onboarding",
       "id, college_verificaiton_otp, college_verificaiton_otp_status, updated_on",
@@ -846,7 +844,7 @@ export const verifyCollegeOtp = async (req, res) => {
 
     const record = data[0];
 
-    /* ================= ALREADY VERIFIED ================= */
+    
     if (record.college_verificaiton_otp_status === "Yes") {
       return res.status(200).json({
         status: true,
@@ -854,7 +852,7 @@ export const verifyCollegeOtp = async (req, res) => {
       });
     }
 
-    /* ================= OTP MATCH ================= */
+    
     if (
       (record.college_verificaiton_otp) !==
       (college_verification_otp)
@@ -866,7 +864,7 @@ export const verifyCollegeOtp = async (req, res) => {
       });
     }
 
-    /* ================= OTP EXPIRY CHECK (15 MIN) ================= */
+  
     const now = new Date();
     const otpTime = new Date(record.updated_on);
     const diffMinutes = (now - otpTime) / (1000 * 60);
@@ -878,7 +876,7 @@ export const verifyCollegeOtp = async (req, res) => {
       });
     }
 
-    /* ================= UPDATE STATUS ================= */
+   
     await commonModel.updateData(
       "ups_colleges_onboarding",
       {
@@ -911,7 +909,7 @@ export const resendCollegeOtp = async (req, res) => {
   try {
     const { onboarding_user_id,ups_colleges_id } = req.body;
 
-    /* ================= VALIDATION ================= */
+    
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -922,7 +920,7 @@ export const resendCollegeOtp = async (req, res) => {
     }
 
 
-    /* ================= GET COLLEGE ================= */
+    
     const collegeData = await commonModel.getData(
       "ups_colleges",
       "*",
@@ -965,7 +963,7 @@ export const resendCollegeOtp = async (req, res) => {
 
     
 
-    /* ================= GET ONBOARDING ================= */
+
     const onboarding = await commonModel.getData(
       "ups_colleges_onboarding",
       "id",
@@ -981,10 +979,10 @@ export const resendCollegeOtp = async (req, res) => {
 
     // const onboardingId = onboarding[0].id;
 
-    /* ================= GENERATE OTP ================= */
+    
     const otp = Math.floor(1000 + Math.random() * 9000);
 
-    /* ================= UPDATE OTP ================= */
+   
     await commonModel.updateData(
       "ups_colleges_onboarding",
       {
@@ -996,7 +994,7 @@ export const resendCollegeOtp = async (req, res) => {
       `onboarding_user_id = ${onboarding_user_id}`
     );
 
-    /* ================= SEND OTP ================= */
+    
     const content = `Your OTP for SkillsConnect is '${otp}' and is valid for 15 mins.
 Please DO NOT share OTP with anyone.
 - UPSKILL TECH SOLUTIONS`;
@@ -1035,7 +1033,7 @@ export const getCollegePrefillData = async (req, res) => {
   try {
     const { college_id } = req.body;
 
-    /* ================= VALIDATION ================= */
+   
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -1045,7 +1043,7 @@ export const getCollegePrefillData = async (req, res) => {
       });
     }
 
-    /* ================= GET COLLEGE (BY ID) ================= */
+    
     const college = await commonModel.getData(
       "ups_colleges",
       `
@@ -1077,7 +1075,7 @@ export const getCollegePrefillData = async (req, res) => {
       });
     }
 
-    /* ================= SUCCESS ================= */
+   
     return res.status(200).json({
       status: true,
       data: college[0]
@@ -1128,7 +1126,6 @@ export const saveManualCollegeDetails = async (req, res) => {
       });
     }
 
-    /* ---------- check onboarding user ---------- */
     const user = await commonModel.getData(
       "ups_college_onboarding_users",
       "official_name",
@@ -1143,7 +1140,6 @@ export const saveManualCollegeDetails = async (req, res) => {
     }
 
 
-    /* ---------- insert into ups_colleges_onboarding ---------- */
     const onboardingCollegeId = await commonModel.insertData(
       "ups_colleges_onboarding",
       {
@@ -1225,7 +1221,7 @@ export const saveOnboardingCourseSpecialization = async (req, res) => {
       });
     }
 
-    /* ----- avoid duplicates ----- */
+  
     const exists = await commonModel.getData(
       "ups_college_onboarding_course_specialization",
       "id",
@@ -1243,7 +1239,6 @@ export const saveOnboardingCourseSpecialization = async (req, res) => {
       });
     }
 
-    /* ----- insert ----- */
     await commonModel.insertData(
       "ups_college_onboarding_course_specialization",
       {
@@ -1337,7 +1332,7 @@ export const submit = async (req, res) => {
       });
     }
 
-    /* ---------- fetch onboarding user ---------- */
+    
     const users = await commonModel.getData(
       "ups_college_onboarding_users",
       `
@@ -1357,12 +1352,12 @@ export const submit = async (req, res) => {
 
     const user = users[0];
 
-    /* ---------- emails ---------- */
+   
     const registeredUserEmail = user.official_email;
     const tpoEmail = user.tpo_official_email || user.official_email;
     const adminEmail = process.env.ADMIN_EMAIL;
 
-    /* ---------- templates ---------- */
+   
     const userMailHtml = `
       <p>Hello ${user.official_name || ""},</p>
       <p>Thank you for registering with <b>SkillsConnect</b>.</p>
@@ -1389,7 +1384,7 @@ export const submit = async (req, res) => {
     
     `;
     console.log(registeredUserEmail, tpoEmail)
-    /* ---------- send mails ---------- */
+    
     if (registeredUserEmail) {
       await sendEmail({
         to: registeredUserEmail,
@@ -1521,4 +1516,5 @@ export const getcity = async (req, res) => {
       msg: "Internal Server Error"
     });
   }
+
 };
