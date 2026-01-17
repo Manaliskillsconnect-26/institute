@@ -1,9 +1,7 @@
 import axios from "axios";
 import commonModel from "../commonModel.js/commonModel.js";
 
-/* =======================
-   MSG91 PROVIDER (POST)
-======================= */
+
 export const msg91SMS = async (
   phone,
   otp,
@@ -57,9 +55,7 @@ export const msg91SMS = async (
   }
 };
 
-/* =======================
-   BHASHSMS PROVIDER (GET)
-======================= */
+
 export const bhashSMS = async (
   number,
   content,
@@ -107,17 +103,13 @@ export const bhashSMS = async (
   }
 };
 
-/* =======================
-   ADMIN ALERT MAIL
-======================= */
+
 const sendAlertMailToAdmin = async (subject, body) => {
   console.warn("ADMIN ALERT:", subject, body);
   return true;
 };
 
-/* =======================
-   MAIN OTP SENDER
-======================= */
+
 export const sendNormalOTPMsg = async (
   number,
   content,
@@ -134,7 +126,7 @@ export const sendNormalOTPMsg = async (
   }
 
   try {
-    /* ---- CHECK BHASHSMS BALANCE ---- */
+    
     const balanceRes = await axios.get(
       "http://bhashsms.com/api/checkbalance.php",
       {
@@ -156,7 +148,7 @@ export const sendNormalOTPMsg = async (
 
     let response = null;
 
-    /* ---- SEND SMS ---- */
+   
     if (balance <= 200) {
       response = await msg91SMS(number, otp);
       await sendAlertMailToAdmin(
@@ -177,7 +169,7 @@ export const sendNormalOTPMsg = async (
 
     if (!response) return false;
 
-    /* ---- LOG (DO NOT FAIL OTP IF LOGGING FAILS) ---- */
+   
     try {
       await commonModel.updateData(
   "ups_college_onboarding_users",
@@ -191,7 +183,7 @@ export const sendNormalOTPMsg = async (
 );
 
     } catch (e) {
-    //   console.error("OTP log insert failed:", e.message);
+    
     }
 
     return true;
